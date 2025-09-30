@@ -1,3 +1,4 @@
+# app/auth.py
 import os
 from typing import Optional
 from datetime import datetime, timedelta
@@ -24,9 +25,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token") if not DISABLE_AUTH
 
 def create_access_token(sub: str, role: str, user_id: int):
     payload = {
-        "sub": sub,
-        "role": role,
-        "uid": user_id,
+        "sub": sub,           # email
+        "role": role,         # "admin" | "entity"
+        "uid": user_id,       # id numérico
         "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -48,12 +49,20 @@ def get_current_user(
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         email: str = payload.get("sub")
-        if email is None:
+        uid: int | None = payload.get("uid")
+        role_in_token: str | None = payload.get("role")
+        if email is None or uid is None or role_in_token is None:
             raise cred_exc
     except JWTError:
         raise cred_exc
 
-    user = db.query(models.User).filter_by(email=email).first()
+    # Resolver contra DB por id si está, si no por email (fallback)
+    user = None
+    if uid is not None:
+        user = db.query(models.User).get(uid)
+    if not user:
+        user = db.query(models.User).filter_by(email=email).first()
+
     if not user:
         raise cred_exc
     return user
@@ -64,7 +73,6 @@ def require_roles(*roles: str):
         if DISABLE_AUTH:
             return user
         # si auth activa, valida rol normalmente
-        # Nota: en tu proyecto puedes tener Enum; usa .value si corresponde.
         current_role = user.role.value if hasattr(user.role, "value") else user.role
         if current_role not in roles:
             raise HTTPException(status_code=403, detail="Sin permisos")
@@ -73,9 +81,22 @@ def require_roles(*roles: str):
 
 @router.post("/token")
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Esto queda igual para cuando reactives la auth
     user = db.query(models.User).filter_by(email=form.username).first()
     if not user or not pwd.verify(form.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Credenciales inválidas")
-    token = create_access_token(user.email, user.role.value if hasattr(user.role, "value") else user.role, user.id)
+    token = create_access_token(
+        user.email,
+        user.role.value if hasattr(user.role, "value") else user.role,
+        user.id
+    )
     return {"access_token": token, "token_type": "bearer"}
+
+# ✅ NUEVO: endpoint para que el front sepa quién es y qué rol tiene
+@router.get("/me")
+def me(current: models.User = Depends(get_current_user)):
+    role = current.role.value if hasattr(current.role, "value") else current.role
+    return {
+        "id": current.id,
+        "email": current.email,
+        "role": role,
+    }

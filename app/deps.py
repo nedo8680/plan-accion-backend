@@ -10,5 +10,5 @@ def seed_users(db: Session):
         db.add(User(email="admin@demo.com", hashed_password=pwd.hash("admin123"), role=UserRole.admin))
     # usuario
     if not db.query(User).filter_by(email="usuario@demo.com").first():
-        db.add(User(email="usuario@demo.com", hashed_password=pwd.hash("usuario123"), role=UserRole.usuario))
+        db.add(User(email="usuario@demo.com", hashed_password=pwd.hash("usuario123"), role=UserRole.entidad))
     db.commit()

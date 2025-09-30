@@ -3,7 +3,7 @@ from app.database import Base
 import enum
 
 class UserRole(str, enum.Enum):
-    usuario = "usuario"
+    entidad = "entidad"
     admin = "admin"
 
 class User(Base):
@@ -11,7 +11,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(Enum(UserRole), nullable=False, default=UserRole.usuario)
+    role = Column(Enum(UserRole), nullable=False, default=UserRole.entidad)
 
 class PlanAccion(Base):
     __tablename__ = "plan_accion"
