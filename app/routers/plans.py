@@ -1,6 +1,5 @@
-# plans.py
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from app.database import get_db
 from app import models, schemas
@@ -80,8 +79,6 @@ def enviar_revision(
     plan = db.query(models.PlanAccion).get(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="No encontrado")
-    # if user.role == models.UserRole.entidad and plan.created_by != user.id:
-    #     raise HTTPException(status_code=403, detail="Sin permisos")
     plan.estado = "En revisión"
     db.commit(); db.refresh(plan)
     return plan
@@ -133,12 +130,10 @@ def eliminar_plan(
 # ---------------- SEGUIMIENTOS (hijos) ----------------
 
 def _assert_access(plan: models.PlanAccion, user: models.User, *, write: bool = False):
-    # if user.role == models.UserRole.entidad and plan.created_by != user.id:
-    #     raise HTTPException(status_code=403, detail="Sin permisos")
     return
 
-@router.get("/{plan_id}/seguimiento")
-@router.get("/{plan_id}/seguimiento/")
+@router.get("/{plan_id}/seguimiento", response_model=List[schemas.SeguimientoOut])
+@router.get("/{plan_id}/seguimiento/", response_model=List[schemas.SeguimientoOut])
 def listar_seguimientos(
     plan_id: int,
     db: Session = Depends(get_db),
@@ -155,8 +150,8 @@ def listar_seguimientos(
         .all()
     )
 
-@router.post("/{plan_id}/seguimiento")
-@router.post("/{plan_id}/seguimiento/")
+@router.post("/{plan_id}/seguimiento", response_model=schemas.SeguimientoOut)
+@router.post("/{plan_id}/seguimiento/", response_model=schemas.SeguimientoOut)
 def crear_seguimiento(
     plan_id: int,
     payload: schemas.SeguimientoCreate,
@@ -174,11 +169,16 @@ def crear_seguimiento(
             data[k] = None
 
     seg = models.Seguimiento(**data, plan_id=plan.id)
-    db.add(seg); db.commit(); db.refresh(seg)
+    seg.updated_by_id = user.id 
+    db.add(seg); db.commit()
+    seg = (
+        db.query(models.Seguimiento)
+          .get(seg.id)
+    )
     return seg
 
-@router.put("/{plan_id}/seguimiento/{seg_id}")
-@router.put("/{plan_id}/seguimiento/{seg_id}/")
+@router.put("/{plan_id}/seguimiento/{seg_id}", response_model=schemas.SeguimientoOut)
+@router.put("/{plan_id}/seguimiento/{seg_id}/", response_model=schemas.SeguimientoOut)
 def actualizar_seguimiento(
     plan_id: int,
     seg_id: int,
@@ -202,7 +202,13 @@ def actualizar_seguimiento(
     for k, v in data.items():
         setattr(seg, k, v)
 
-    db.commit(); db.refresh(seg)
+    seg.updated_by_id = user.id
+    db.commit()
+    # 🔁 reconsulta con join para traer el email
+    seg = (
+        db.query(models.Seguimiento)
+          .get(seg.id)
+    )
     return seg
 
 @router.delete("/{plan_id}/seguimiento/{seg_id}")

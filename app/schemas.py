@@ -1,7 +1,12 @@
-# schemas.py
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from typing import Optional
 from datetime import date, datetime
+from typing_extensions import Literal
+import enum
+
+EntidadPerm = Literal["captura_reportes", "reportes_seguimiento"]
+class UserPasswordReset(BaseModel):
+    new_password: str
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -34,6 +39,34 @@ class PlanOut(PlanBase):
     created_by: int
     model_config = ConfigDict(from_attributes=True)
 
+# ---------- Users (Admin only) ----------
+UserRoleInput = Literal["admin", "entidad", "auditor"]
+
+class EntidadPermUpdate(BaseModel):
+    entidad_perm: EntidadPerm
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    role: UserRoleInput
+    entidad_perm: Optional[EntidadPerm] = None
+
+class UserRoleUpdate(BaseModel):
+    role: UserRoleInput
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    role: Literal["admin", "entidad", "auditor", "ciudadano"]
+    entidad_perm: Optional[EntidadPerm] = None
+    class Config:
+        from_attributes = True
+    # 🔧 Convierte Enum -> string antes de validar
+    @field_validator("role", mode="before")
+    @classmethod
+    def _cast_enum_role(cls, v):
+        return v.value if isinstance(v, enum.Enum) else v
+
 # ---------------- Seguimiento (hijo) ----------------
 class SeguimientoBase(BaseModel):
     observacion_calidad: Optional[str] = None
@@ -59,4 +92,5 @@ class SeguimientoOut(SeguimientoBase):
     plan_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    model_config = ConfigDict(from_attributes=True)
+    updated_by_email: Optional[str] = None  # 👈
+    model_config = ConfigDict(from_attributes=True)   

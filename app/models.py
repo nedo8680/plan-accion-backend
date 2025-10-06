@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, Date, Enum, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Text, Date, Enum, ForeignKey, DateTime, select
+from sqlalchemy.orm import relationship, column_property
+from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
 from app.database import Base
 import enum
@@ -6,9 +8,10 @@ import uuid
 
 
 class UserRole(str, enum.Enum):
-    entidad = "entidad"
     admin = "admin"
+    entidad = "entidad"
     auditor = "auditor"
+    ciudadano = "ciudadano"
 
 class User(Base):
     __tablename__ = "users"
@@ -16,6 +19,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.entidad)
+    entidad_perm = Column(String(32), nullable=True)  # "captura_reportes" | "reportes_seguimiento"
 
 class PlanAccion(Base):
     __tablename__ = "plan_accion"
@@ -41,8 +45,17 @@ class Seguimiento(Base):
     __tablename__ = "seguimiento"
     id = Column(Integer, primary_key=True)
     plan_id = Column(Integer, ForeignKey("plan_accion.id"), nullable=False)
+    
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
 
-    # SIN observacion_informe_calidad; SOLO el del auditor:
+    updated_by_email = column_property(
+        select(User.email)
+        .where(User.id == updated_by_id)
+        .correlate_except(User)
+        .scalar_subquery()
+    )
+
     observacion_calidad = Column(Text, nullable=True)
 
     insumo_mejora = Column(String(255), nullable=True)
@@ -57,3 +70,7 @@ class Seguimiento(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+@hybrid_property
+def updated_by_email(self):
+    return self.updated_by.email if self.updated_by else None
