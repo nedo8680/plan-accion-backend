@@ -2,8 +2,8 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import Response  # NEW
-from app import models
+from starlette.responses import Response 
+from fastapi.staticfiles import StaticFiles
 
 from app.config import CORS_ORIGINS as CORS_ORIGINS_DEFAULT
 from app.database import Base, engine, SessionLocal
@@ -11,7 +11,10 @@ from sqlalchemy import text
 from app.auth import router as auth_router
 from app.routers.plans import router as planes_router
 from app.routers.users import router as users_router
+from app.routers.files import router as files_router
+
 from app.deps import seed_users
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CORS: toma de env o de config
@@ -145,7 +148,8 @@ def patch_db_on_startup():
 # Routers
 app.include_router(auth_router)        # /auth/token, /auth/me
 app.include_router(planes_router)      # /seguimiento/*
-app.include_router(users_router)  # /users/* (admin only)
+app.include_router(users_router)       # /users/* (admin only)
+app.include_router(files_router)   # /files/*
 
 @app.get("/")
 def root():
@@ -154,3 +158,8 @@ def root():
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
+
+# ───────── Archivos estáticos para evidencias (PDF/DOC/DOCX) ─────────
+# Sirve URLs del tipo: /uploads/evidence/<archivo>
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")

@@ -69,7 +69,7 @@ class UserOut(BaseModel):
 
 # ---------------- Seguimiento (hijo) ----------------
 class SeguimientoBase(BaseModel):
-    observacion_calidad: Optional[str] = None
+    observacion_informe_calidad: Optional[str] = None
     insumo_mejora: Optional[str] = None
     tipo_accion_mejora: Optional[str] = None
     accion_mejora_planteada: Optional[str] = None
@@ -80,9 +80,11 @@ class SeguimientoBase(BaseModel):
     seguimiento: Optional[str] = "Pendiente"
     enlace_entidad: Optional[str] = None
     observacion_calidad: Optional[str] = None  # auditor/admin
+    indicador: Optional[str] = None
 
 class SeguimientoCreate(SeguimientoBase):
     pass
+
 
 class SeguimientoUpdate(SeguimientoBase):
     pass
@@ -92,5 +94,5 @@ class SeguimientoOut(SeguimientoBase):
     plan_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    updated_by_email: Optional[str] = None  # 👈
+    updated_by_email: Optional[str] = None  
     model_config = ConfigDict(from_attributes=True)   

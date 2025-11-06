@@ -44,6 +44,8 @@ class PlanAccion(Base):
 class Seguimiento(Base):
     __tablename__ = "seguimiento"
     id = Column(Integer, primary_key=True)
+    indicador = Column(String, nullable=True)
+    observacion_informe_calidad = Column(Text, nullable=True)
     plan_id = Column(Integer, ForeignKey("plan_accion.id"), nullable=False)
     
     updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
