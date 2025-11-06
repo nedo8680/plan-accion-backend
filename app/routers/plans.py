@@ -124,6 +124,7 @@ def eliminar_plan(
     plan = db.query(models.PlanAccion).get(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="No encontrado")
+    db.query(models.Seguimiento).filter(models.Seguimiento.plan_id == plan_id).delete()
     db.delete(plan); db.commit()
     return {"ok": True}
 
@@ -201,7 +202,9 @@ def actualizar_seguimiento(
 
     for k, v in data.items():
         setattr(seg, k, v)
-
+        
+    if "enlace_entidad" in data:
+        plan.enlace_entidad = data["enlace_entidad"]
     seg.updated_by_id = user.id
     db.commit()
     # 🔁 reconsulta con join para traer el email
