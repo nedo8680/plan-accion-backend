@@ -13,7 +13,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 def get_latest_report(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
-) -> schemas.PlanOut:
+) -> schemas.ReportBase:
     report = db.query(models.Reporte).order_by(models.Reporte.id.desc()).first()
     if not report:
         raise HTTPException(status_code=404, detail="No report found")
@@ -25,7 +25,7 @@ def create_report(
     payload: schemas.ReportCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(require_roles("admin", "auditor")),
-) -> schemas.PlanOut:
+) -> schemas.ReportCreate:
     report = models.Reporte(**payload.model_dump(exclude_unset=True))
     db.add(report); db.commit(); db.refresh(report)
     return report
