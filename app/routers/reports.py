@@ -58,6 +58,7 @@ def cargar_reportes(
     return {"insertados": len(nuevos)}
 
 
+@router.delete("")
 @router.delete("/")
 def clear_reportes(
     db: Session = Depends(get_db),
