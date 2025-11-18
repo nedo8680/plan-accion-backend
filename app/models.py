@@ -74,6 +74,15 @@ class Seguimiento(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+
+# Creación de clase Reporte para almacenar datos de automatización de reportes
+class Reporte(Base):
+    __tablename__ = "reportes"
+    id = Column(Integer, primary_key=True, index=True)
+    entidad = Column(Text, nullable=False)
+    indicador = Column(Text, nullable=False)
+    accion = Column(Text, nullable=False)
+
 @hybrid_property
 def updated_by_email(self):
     return self.updated_by.email if self.updated_by else None

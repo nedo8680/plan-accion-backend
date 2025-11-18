@@ -98,3 +98,16 @@ class SeguimientoOut(SeguimientoBase):
     updated_at: Optional[datetime] = None
     updated_by_email: Optional[str] = None  
     model_config = ConfigDict(from_attributes=True)   
+
+
+# ---------------- Reporte (padre) ----------------
+class ReportBase(BaseModel):
+    entidad: Optional[str] = None
+    indicador: Optional[str] = None
+    accion: Optional[str] = None
+    
+class ReporteEntrada(ReportBase):
+    pass
+
+class ReporteEntradaLista(BaseModel):
+    reportes: list[ReporteEntrada]
