@@ -4,6 +4,7 @@ from typing import List, Optional
 from app.database import get_db
 from app import models, schemas
 from app.auth import get_current_user, require_roles
+from sqlalchemy import func
 
 router = APIRouter(prefix="/seguimiento", tags=["seguimiento"])
 
@@ -18,6 +19,13 @@ def list_planes(
     limit: int = 50,
 ) -> List[schemas.PlanOut]:
     query = db.query(models.PlanAccion)
+    user_role = getattr(user.role, "value", user.role)
+    user_entidad = (getattr(user, "entidad", "") or "").strip()
+
+    if user_role == "entidad" and user_entidad:
+        query = query.filter(
+            func.lower(models.PlanAccion.nombre_entidad) == func.lower(user_entidad)
+        )
     if q:
         like = f"%{q}%"
         query = query.filter(models.PlanAccion.nombre_entidad.ilike(like))
@@ -35,7 +43,13 @@ def crear_plan(
     db: Session = Depends(get_db),
     user: models.User = Depends(require_roles("entidad", "admin")),
 ) -> schemas.PlanOut:
-    plan = models.PlanAccion(**payload.model_dump(exclude_unset=True), created_by=user.id)
+    data = payload.model_dump(exclude_unset=True)
+
+    user_role = getattr(user.role, "value", user.role)
+    if user_role == "entidad":
+        data["nombre_entidad"] = (getattr(user, "entidad", "") or "").strip()
+        
+    plan = models.PlanAccion(**data, created_by=user.id)
     db.add(plan); db.commit(); db.refresh(plan)
     return plan
 
@@ -65,6 +79,8 @@ def actualizar_plan(
     # if user.role == models.UserRole.entidad and plan.created_by != user.id:
     #     raise HTTPException(status_code=403, detail="Sin permisos")
     for k, v in payload.model_dump(exclude_unset=True).items():
+        if k == "nombre_entidad":
+            continue 
         setattr(plan, k, v)
     db.commit(); db.refresh(plan)
     return plan

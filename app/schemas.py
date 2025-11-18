@@ -50,6 +50,7 @@ class UserCreate(BaseModel):
     password: str
     role: UserRoleInput
     entidad_perm: Optional[EntidadPerm] = None
+    entidad: str
 
 class UserRoleUpdate(BaseModel):
     role: UserRoleInput
@@ -59,6 +60,7 @@ class UserOut(BaseModel):
     email: EmailStr
     role: Literal["admin", "entidad", "auditor", "ciudadano"]
     entidad_perm: Optional[EntidadPerm] = None
+    entidad: str
     class Config:
         from_attributes = True
     # 🔧 Convierte Enum -> string antes de validar

@@ -79,18 +79,33 @@ def create_user(payload: schemas.UserCreate, db: Session = Depends(get_db), user
     if len(payload.password) < 8:
         raise HTTPException(status_code=422, detail="Password too short (min 8)")
     exists = db.query(models.User).filter(models.User.email == email).first()
+
+    entidad_clean = (payload.entidad or "").strip()
+    if not entidad_clean:
+        raise HTTPException(
+            status_code=422,
+            detail="El campo 'entidad' es obligatorio",
+        )
+    
     if exists:
         raise HTTPException(400, "Email already exists")
     hashed = bcrypt.hash(payload.password)
 
     perm = payload.entidad_perm if payload.role == "entidad" else None
-    u = models.User(email=email, hashed_password=hashed, role=_as_db_role(payload.role),  entidad_perm=perm)
+
+    u = models.User(
+        email=email, 
+        hashed_password=hashed, 
+        role=_as_db_role(payload.role), 
+        entidad=entidad_clean, 
+        entidad_perm=perm
+    )
+
     db.add(u)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        # por si hay índice único en DB y se escapó la validación previa
         raise HTTPException(status_code=400, detail="Email already exists")
     db.refresh(u)
     return u

@@ -19,7 +19,8 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.entidad)
-    entidad_perm = Column(String(32), nullable=True)  # "captura_reportes" | "reportes_seguimiento"
+    entidad_perm = Column(String(32), nullable=True)
+    entidad = Column(String, nullable=False) 
 
 class PlanAccion(Base):
     __tablename__ = "plan_accion"
