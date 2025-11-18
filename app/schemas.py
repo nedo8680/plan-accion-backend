@@ -104,5 +104,8 @@ class ReportBase(BaseModel):
     indicador: Optional[str] = None
     accion: Optional[str] = None
     
-class ReportCreate(ReportBase):
+class ReporteEntrada(ReportBase):
     pass
+
+class ReporteEntradaLista(BaseModel):
+    reportes: list[ReporteEntrada]
