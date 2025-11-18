@@ -58,11 +58,16 @@ def cargar_reportes(
     return {"insertados": len(nuevos)}
 
 
+@router.delete("")
 @router.delete("/")
-def borrar_todos_los_reportes(
+def clear_reportes(
     db: Session = Depends(get_db),
-    user: models.User = Depends(require_roles(["admin"])),
+    user: models.User = Depends(get_current_user),
 ):
-    num_borrados = db.query(models.Reporte).delete()
+    # Borrar todos los registros
+    deleted = db.query(models.Reporte).delete()
+
+    # Confirmar cambios
     db.commit()
-    return {"borrados": num_borrados}
+
+    return {"detail": f"{deleted} registros eliminados"}
