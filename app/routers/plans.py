@@ -8,6 +8,39 @@ from sqlalchemy import func
 
 router = APIRouter(prefix="/seguimiento", tags=["seguimiento"])
 
+@router.get("/indicadores_usados", response_model=List[str])
+@router.get("/indicadores_usados/", response_model=List[str])
+def indicadores_usados(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+) -> List[str]:
+    """
+    Devuelve los indicadores que YA tienen al menos un seguimiento
+    para la entidad del usuario autenticado.
+    """
+    user_entidad = (getattr(user, "entidad", "") or "").strip()
+
+    # Base: join Seguimiento -> PlanAccion para filtrar por entidad
+    q = (
+        db.query(models.Seguimiento.indicador)
+        .join(models.PlanAccion, models.Seguimiento.plan_id == models.PlanAccion.id)
+        .filter(
+            models.Seguimiento.indicador.isnot(None),
+            func.trim(models.Seguimiento.indicador) != "",
+        )
+    )
+
+    # Si el usuario tiene entidad asociada, filtramos solo sus planes
+    if user_entidad:
+        q = q.filter(
+            func.lower(models.PlanAccion.nombre_entidad) == func.lower(user_entidad)
+        )
+
+    # Distinct para no devolver duplicados
+    rows = q.distinct().all()
+    # rows es una lista de tuplas (indicador,), nos quedamos con el valor
+    return [r[0].strip() for r in rows if r[0]]
+
 # ---------------- PLANES (padre) ----------------
 @router.get("")          # <— sin slash
 @router.get("/")         # <— con slash
@@ -160,12 +193,14 @@ def listar_seguimientos(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
     _assert_access(plan, user)
-    return (
+    seguimientos = (
         db.query(models.Seguimiento)
+        .options(joinedload(models.Seguimiento.updated_by))  # 👈 aquí usamos la relación
         .filter(models.Seguimiento.plan_id == plan.id)
         .order_by(models.Seguimiento.id.asc())
         .all()
     )
+    return seguimientos
 
 @router.post("/{plan_id}/seguimiento", response_model=schemas.SeguimientoOut)
 @router.post("/{plan_id}/seguimiento/", response_model=schemas.SeguimientoOut)
@@ -187,11 +222,14 @@ def crear_seguimiento(
 
     seg = models.Seguimiento(**data, plan_id=plan.id)
     seg.updated_by_id = user.id 
-    db.add(seg); db.commit()
-    seg = (
-        db.query(models.Seguimiento)
-          .get(seg.id)
-    )
+    db.add(seg); 
+    
+    indicador_val = (data.get("indicador") or "").strip()
+    if indicador_val:
+        plan.indicador = indicador_val
+    
+    db.commit(); 
+    db.refresh(seg)
     return seg
 
 @router.put("/{plan_id}/seguimiento/{seg_id}", response_model=schemas.SeguimientoOut)
@@ -221,13 +259,15 @@ def actualizar_seguimiento(
         
     if "enlace_entidad" in data:
         plan.enlace_entidad = data["enlace_entidad"]
+    
+    indicador = (data.get("indicador") or "").strip()
+    if indicador:
+        plan.indicador = indicador
+
     seg.updated_by_id = user.id
     db.commit()
-    # 🔁 reconsulta con join para traer el email
-    seg = (
-        db.query(models.Seguimiento)
-          .get(seg.id)
-    )
+    db.refresh(seg)
+
     return seg
 
 @router.delete("/{plan_id}/seguimiento/{seg_id}")

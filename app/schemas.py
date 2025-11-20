@@ -27,6 +27,7 @@ class PlanBase(BaseModel):
     seguimiento: Optional[str] = None
     enlace_entidad: Optional[str] = None
     estado: Optional[str] = "Pendiente"
+    indicador: Optional[str] = None
 
 class PlanCreate(PlanBase):
     pass
@@ -97,6 +98,7 @@ class SeguimientoOut(SeguimientoBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     updated_by_email: Optional[str] = None  
+    updated_by_entidad: Optional[str] = None  
     model_config = ConfigDict(from_attributes=True)   
 
 

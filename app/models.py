@@ -41,6 +41,12 @@ class PlanAccion(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     estado = Column(String(50), nullable=True, default="Pendiente")
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    indicador = Column(String(255), nullable=True)
+    seguimientos = relationship(
+        "Seguimiento",
+        back_populates="plan",
+        cascade="all, delete-orphan",
+    )
 
 class Seguimiento(Base):
     __tablename__ = "seguimiento"
@@ -51,13 +57,7 @@ class Seguimiento(Base):
     
     updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     updated_by = relationship("User", foreign_keys=[updated_by_id])
-
-    updated_by_email = column_property(
-        select(User.email)
-        .where(User.id == updated_by_id)
-        .correlate_except(User)
-        .scalar_subquery()
-    )
+    plan = relationship("PlanAccion", back_populates="seguimientos")
 
     observacion_calidad = Column(Text, nullable=True)
 
@@ -74,6 +74,13 @@ class Seguimiento(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    @property
+    def updated_by_email(self) -> str | None:
+        return self.updated_by.email if self.updated_by else None
+    @property
+    def updated_by_entidad(self) -> str | None:
+        return self.updated_by.entidad if self.updated_by else None
+
 
 # Creación de clase Reporte para almacenar datos de automatización de reportes
 class Reporte(Base):
@@ -83,6 +90,3 @@ class Reporte(Base):
     indicador = Column(Text, nullable=False)
     accion = Column(Text, nullable=False)
 
-@hybrid_property
-def updated_by_email(self):
-    return self.updated_by.email if self.updated_by else None
