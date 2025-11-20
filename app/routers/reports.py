@@ -8,6 +8,16 @@ from app.auth import get_current_user, require_roles
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 # ---------------- REPORTES (padre) ----------------
+@router.get("")
+@router.get("/")
+def get_all_reportes(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    reportes = db.query(models.Reporte).all()
+    return reportes
+
+
 @router.get("/{nombre_entidad}")
 @router.get("/{nombre_entidad}/")
 def get_reportes_por_entidad(
