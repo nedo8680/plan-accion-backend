@@ -40,7 +40,7 @@ class PlanAccion(Base):
     observacion_calidad = Column(Text, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     estado = Column(String(50), nullable=True, default="Pendiente")
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     indicador = Column(String(255), nullable=True)
     seguimientos = relationship(
         "Seguimiento",
@@ -55,7 +55,7 @@ class Seguimiento(Base):
     observacion_informe_calidad = Column(Text, nullable=True)
     plan_id = Column(Integer, ForeignKey("plan_accion.id"), nullable=False)
     
-    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     updated_by = relationship("User", foreign_keys=[updated_by_id])
     plan = relationship("PlanAccion", back_populates="seguimientos")
 
@@ -89,4 +89,3 @@ class Reporte(Base):
     entidad = Column(Text, nullable=False)
     indicador = Column(Text, nullable=False)
     accion = Column(Text, nullable=False)
-

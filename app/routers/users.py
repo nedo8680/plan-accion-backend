@@ -46,8 +46,34 @@ def delete_user(user_id: int, db: Session = Depends(get_db), user=Depends(get_cu
         admins = db.query(models.User).filter(models.User.role == _as_db_role("admin")).count()
         if admins <= 1:
             raise HTTPException(status_code=400, detail="Cannot delete the last admin")
-    db.delete(u)
-    db.commit()
+    # Desvinculamos registros que referencian al usuario antes de eliminarlo (solo en motores con FK estricta)
+    dialect = getattr(getattr(db, "bind", None), "dialect", None)
+    dialect_name = getattr(dialect, "name", "")
+    if dialect_name in ("postgresql", "postgres"):
+        try:
+            db.query(models.PlanAccion).filter(models.PlanAccion.created_by == u.id).update(
+                {models.PlanAccion.created_by: None}, synchronize_session=False
+            )
+            db.query(models.Seguimiento).filter(models.Seguimiento.updated_by_id == u.id).update(
+                {models.Seguimiento.updated_by_id: None}, synchronize_session=False
+            )
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail="No se pudo desvincular los planes/seguimientos asociados a este usuario",
+            )
+
+    try:
+        db.delete(u)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="No se pudo eliminar porque existen referencias activas a este usuario",
+        )
     return Response(status_code=204)
 
 def _role_value(r):

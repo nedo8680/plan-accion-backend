@@ -37,7 +37,7 @@ class PlanUpdate(PlanBase):
 
 class PlanOut(PlanBase):
     id: int
-    created_by: int
+    created_by: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 # ---------- Users (Admin only) ----------
