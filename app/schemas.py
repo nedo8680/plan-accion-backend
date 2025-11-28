@@ -109,3 +109,45 @@ class ReporteEntrada(ReportBase):
 
 class ReporteEntradaLista(BaseModel):
     reportes: list[ReporteEntrada]
+
+
+# ---------------- PQRDS (padre) ----------------
+class PqrdBase(BaseModel):
+    label: int
+    fecha_vencimiento: Optional[date] = None
+    fecha_radicado_salida: Optional[date] = None
+    dias_gestion: Optional[int] = None
+
+    @field_validator("fecha_vencimiento", "fecha_radicado_salida", mode="before")
+    def empty_string_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+
+
+class PqrdCreate(PqrdBase):
+    pass
+
+class PqrdUpdate(PqrdBase):
+    pass
+
+class PqrdEntradaLista(BaseModel):
+    pqrds: list[PqrdCreate]
+
+
+# --------------- Habilidades (Padre) ----------------
+class HabilidadBase(BaseModel):
+    anio: int
+    mes: int
+    id_entidad: int
+    entidad: Optional[str] = None
+    pct_habilidades_tecnicas: Optional[int] = None
+    num_capacitados_tecnicas: Optional[int] = None
+    pct_habilidades_socioemocionales: Optional[int] = None
+    num_capacitados_socioemocionales: Optional[int] = None
+
+class HabilidadCreate(HabilidadBase):
+    pass
+
+class HabilidadEntradaLista(BaseModel):
+    habilidades: list[HabilidadBase]

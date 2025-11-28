@@ -82,6 +82,28 @@ class Reporte(Base):
     indicador = Column(Text, nullable=False)
     accion = Column(Text, nullable=False)
 
+# Clase de PQRDS
+class PQRD(Base):
+    __tablename__ = "pqrds"
+    id = Column(Integer, primary_key=True, index=True)
+    label = Column(Integer, nullable=False)
+    fecha_vencimiento = Column(Date, nullable=True)
+    fecha_radicado_salida = Column(Date, nullable=True)
+    dias_gestion = Column(Integer, nullable=True)
+
+# Clase de habilidades
+class Habilidad(Base):
+    __tablename__ = "habilidades"
+    id = Column(Integer, primary_key=True, index=True)
+    anio = Column(Integer, nullable=False)
+    mes = Column(Integer, nullable=False)
+    id_entidad = Column(Integer, nullable=False)
+    entidad = Column(String(255))
+    pct_habilidades_tecnicas = Column(Integer)
+    num_capacitados_tecnicas = Column(Integer)
+    pct_habilidades_socioemocionales = Column(Integer)
+    num_capacitados_socioemocionales = Column(Integer)
+
 @hybrid_property
 def updated_by_email(self):
     return self.updated_by.email if self.updated_by else None
