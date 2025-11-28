@@ -13,6 +13,8 @@ from app.routers.plans import router as planes_router
 from app.routers.users import router as users_router
 from app.routers.files import router as files_router
 from app.routers.reports import router as reports_router
+from app.routers.pqrds import router as pqrds_router
+from app.routers.habilidades import router as habilidades_router
 
 from app.deps import seed_users
 
@@ -248,6 +250,8 @@ app.include_router(planes_router)      # /seguimiento/*
 app.include_router(users_router)       # /users/* (admin only)
 app.include_router(files_router)   # /files/*
 app.include_router(reports_router)     # /reports/*
+app.include_router(pqrds_router)
+app.include_router(habilidades_router)
 
 
 @app.get("/")
