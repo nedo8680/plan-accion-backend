@@ -46,8 +46,34 @@ def delete_user(user_id: int, db: Session = Depends(get_db), user=Depends(get_cu
         admins = db.query(models.User).filter(models.User.role == _as_db_role("admin")).count()
         if admins <= 1:
             raise HTTPException(status_code=400, detail="Cannot delete the last admin")
-    db.delete(u)
-    db.commit()
+    # Desvinculamos registros que referencian al usuario antes de eliminarlo (solo en motores con FK estricta)
+    dialect = getattr(getattr(db, "bind", None), "dialect", None)
+    dialect_name = getattr(dialect, "name", "")
+    if dialect_name in ("postgresql", "postgres"):
+        try:
+            db.query(models.PlanAccion).filter(models.PlanAccion.created_by == u.id).update(
+                {models.PlanAccion.created_by: None}, synchronize_session=False
+            )
+            db.query(models.Seguimiento).filter(models.Seguimiento.updated_by_id == u.id).update(
+                {models.Seguimiento.updated_by_id: None}, synchronize_session=False
+            )
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail="No se pudo desvincular los planes/seguimientos asociados a este usuario",
+            )
+
+    try:
+        db.delete(u)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="No se pudo eliminar porque existen referencias activas a este usuario",
+        )
     return Response(status_code=204)
 
 def _role_value(r):
@@ -79,18 +105,33 @@ def create_user(payload: schemas.UserCreate, db: Session = Depends(get_db), user
     if len(payload.password) < 8:
         raise HTTPException(status_code=422, detail="Password too short (min 8)")
     exists = db.query(models.User).filter(models.User.email == email).first()
+
+    entidad_clean = (payload.entidad or "").strip()
+    if not entidad_clean:
+        raise HTTPException(
+            status_code=422,
+            detail="El campo 'entidad' es obligatorio",
+        )
+    
     if exists:
         raise HTTPException(400, "Email already exists")
     hashed = bcrypt.hash(payload.password)
 
     perm = payload.entidad_perm if payload.role == "entidad" else None
-    u = models.User(email=email, hashed_password=hashed, role=_as_db_role(payload.role),  entidad_perm=perm)
+
+    u = models.User(
+        email=email, 
+        hashed_password=hashed, 
+        role=_as_db_role(payload.role), 
+        entidad=entidad_clean, 
+        entidad_perm=perm
+    )
+
     db.add(u)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        # por si hay índice único en DB y se escapó la validación previa
         raise HTTPException(status_code=400, detail="Email already exists")
     db.refresh(u)
     return u

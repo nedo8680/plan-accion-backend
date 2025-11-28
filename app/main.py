@@ -77,11 +77,107 @@ def _ensure_updated_by_column():
     except Exception as e:
         # Nunca tumbes el servicio por un parche de conveniencia
         print(f"[WARN] _ensure_updated_by_column falló: {e}")
+
+def _relax_user_fk_constraints():
+    """
+    Ajusta las FKs que apuntan a users para permitir ON DELETE SET NULL en PostgreSQL.
+    Evita que el borrado de un usuario falle por plan_accion.created_by o seguimiento.updated_by_id.
+    """
+    try:
+        with engine.begin() as conn:
+            dialect = conn.engine.dialect.name
+            if dialect not in ("postgresql", "postgres"):
+                return
+
+            # Evitar fallos si las tablas aún no existen (incluye versión plural heredada)
+            plan_table = "plan_accion" if conn.execute(text("SELECT to_regclass('public.plan_accion')")).scalar() else None
+            seg_table = None
+            t1 = conn.execute(text("SELECT to_regclass('public.seguimiento')")).scalar()
+            t2 = conn.execute(text("SELECT to_regclass('public.seguimientos')")).scalar()
+            if t1:
+                seg_table = "seguimiento"
+            elif t2:
+                seg_table = "seguimientos"
+
+            if plan_table:
+                conn.execute(text(f'ALTER TABLE "{plan_table}" ALTER COLUMN created_by DROP NOT NULL'))
+                conn.execute(text(f"""
+                    DO $$ DECLARE constr_name text;
+                    BEGIN
+                        SELECT tc.constraint_name INTO constr_name
+                        FROM information_schema.table_constraints tc
+                        JOIN information_schema.constraint_column_usage ccu
+                          ON tc.constraint_name = ccu.constraint_name
+                        WHERE tc.table_schema='public'
+                          AND tc.table_name='{plan_table}'
+                          AND ccu.column_name='created_by'
+                          AND tc.constraint_type='FOREIGN KEY'
+                        LIMIT 1;
+                        IF constr_name IS NOT NULL THEN
+                            EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I', '{plan_table}', constr_name);
+                        END IF;
+                    END$$;
+                """))
+                conn.execute(text(f"""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1
+                            FROM information_schema.table_constraints
+                            WHERE table_schema='public'
+                              AND table_name='{plan_table}'
+                              AND constraint_name='plan_accion_created_by_fkey'
+                        ) THEN
+                            ALTER TABLE "{plan_table}"
+                            ADD CONSTRAINT plan_accion_created_by_fkey
+                            FOREIGN KEY (created_by) REFERENCES "users"(id) ON DELETE SET NULL;
+                        END IF;
+                    END$$;
+                """))
+
+            if seg_table:
+                conn.execute(text(f'ALTER TABLE "{seg_table}" ALTER COLUMN updated_by_id DROP NOT NULL'))
+                conn.execute(text(f"""
+                    DO $$ DECLARE constr_name text;
+                    BEGIN
+                        SELECT tc.constraint_name INTO constr_name
+                        FROM information_schema.table_constraints tc
+                        JOIN information_schema.constraint_column_usage ccu
+                          ON tc.constraint_name = ccu.constraint_name
+                        WHERE tc.table_schema='public'
+                          AND tc.table_name='{seg_table}'
+                          AND ccu.column_name='updated_by_id'
+                          AND tc.constraint_type='FOREIGN KEY'
+                        LIMIT 1;
+                        IF constr_name IS NOT NULL THEN
+                            EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I', '{seg_table}', constr_name);
+                        END IF;
+                    END$$;
+                """))
+                conn.execute(text(f"""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1
+                            FROM information_schema.table_constraints
+                            WHERE table_schema='public'
+                              AND table_name='{seg_table}'
+                              AND constraint_name='seguimiento_updated_by_id_fkey'
+                        ) THEN
+                            ALTER TABLE "{seg_table}"
+                            ADD CONSTRAINT seguimiento_updated_by_id_fkey
+                            FOREIGN KEY (updated_by_id) REFERENCES "users"(id) ON DELETE SET NULL;
+                        END IF;
+                    END$$;
+                """))
+    except Exception as e:
+        print(f"[WARN] _relax_user_fk_constraints falló: {e}")
             
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     _ensure_updated_by_column() 
+    _relax_user_fk_constraints()
     if SEED_ON_START:
         with SessionLocal() as db:
             seed_users(db)

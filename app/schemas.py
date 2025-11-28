@@ -27,6 +27,7 @@ class PlanBase(BaseModel):
     seguimiento: Optional[str] = None
     enlace_entidad: Optional[str] = None
     estado: Optional[str] = "Pendiente"
+    indicador: Optional[str] = None
 
 class PlanCreate(PlanBase):
     pass
@@ -36,7 +37,7 @@ class PlanUpdate(PlanBase):
 
 class PlanOut(PlanBase):
     id: int
-    created_by: int
+    created_by: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 # ---------- Users (Admin only) ----------
@@ -50,6 +51,7 @@ class UserCreate(BaseModel):
     password: str
     role: UserRoleInput
     entidad_perm: Optional[EntidadPerm] = None
+    entidad: str
 
 class UserRoleUpdate(BaseModel):
     role: UserRoleInput
@@ -59,6 +61,7 @@ class UserOut(BaseModel):
     email: EmailStr
     role: Literal["admin", "entidad", "auditor", "ciudadano"]
     entidad_perm: Optional[EntidadPerm] = None
+    entidad: str
     class Config:
         from_attributes = True
     # 🔧 Convierte Enum -> string antes de validar
@@ -95,6 +98,7 @@ class SeguimientoOut(SeguimientoBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     updated_by_email: Optional[str] = None  
+    updated_by_entidad: Optional[str] = None  
     model_config = ConfigDict(from_attributes=True)   
 
 

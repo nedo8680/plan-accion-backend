@@ -14,9 +14,19 @@ MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "5"))
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 ALLOWED_MIMES = {
+     # Imágenes
+    "image/jpeg", "image/png", "image/gif",
+    # PDF
     "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    # Excel / CSV
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/csv",
+    # Comprimidos
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-rar-compressed",
+    "application/x-7z-compressed",
 }
 
 # Local filesystem (fallback)
@@ -31,14 +41,13 @@ GCS_PREFIX = os.getenv("GCS_PREFIX", "evidence/").lstrip("/")
 
 router = APIRouter(prefix="/files", tags=["files"])
 
-
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_evidence(file: UploadFile = File(...)) -> Dict[str, str]:
     # 1) Validación de tipo MIME
     if file.content_type not in ALLOWED_MIMES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Solo se permiten PDF o Word (doc, docx).",
+            detail="Formatos permitidos: imágenes (JPG, PNG, GIF), PDF, Excel (XLS/XLSX/CSV) y comprimidos (ZIP, RAR, 7Z)",
         )
     
     try:
