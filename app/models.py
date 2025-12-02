@@ -80,7 +80,9 @@ class Reporte(Base):
     id = Column(Integer, primary_key=True, index=True)
     entidad = Column(Text, nullable=False)
     indicador = Column(Text, nullable=False)
+    criterio = Column(Text, nullable=False)
     accion = Column(Text, nullable=False)
+    insumo = Column(Text, nullable=True)
 
 # Clase de PQRDS
 class PQRD(Base):

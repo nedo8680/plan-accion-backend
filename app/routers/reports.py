@@ -39,9 +39,9 @@ def get_reportes_por_entidad(
     resultado = {
         "entidad": registros[0].entidad,
         "indicadores": [
-            {"indicador": r.indicador, "accion": r.accion}
+            {"indicador": r.indicador, "criterio": r.criterio, "accion": r.accion, "insumo": r.insumo}
             for r in registros
-            if r.indicador is not None and r.accion is not None
+            if r.indicador is not None and r.criterio is not None
         ],
     }
     return resultado
@@ -59,7 +59,9 @@ def cargar_reportes(
         nuevo = models.Reporte(
             entidad=r.entidad,
             indicador=r.indicador,
-            accion=r.accion
+            criterio=r.criterio,
+            accion=r.accion,
+            insumo=r.insumo
         )
         db.add(nuevo)
         nuevos.append(nuevo)
