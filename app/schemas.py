@@ -106,7 +106,9 @@ class SeguimientoOut(SeguimientoBase):
 class ReportBase(BaseModel):
     entidad: Optional[str] = None
     indicador: Optional[str] = None
+    criterio: Optional[str] = None
     accion: Optional[str] = None
+    insumo: Optional[str] = None
     
 class ReporteEntrada(ReportBase):
     pass
