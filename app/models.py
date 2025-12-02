@@ -86,7 +86,7 @@ class Reporte(Base):
 class PQRD(Base):
     __tablename__ = "pqrds"
     id = Column(Integer, primary_key=True, index=True)
-    label = Column(Integer, nullable=False)
+    label = Column(String(255), nullable=False)
     fecha_vencimiento = Column(Date, nullable=True)
     fecha_radicado_salida = Column(Date, nullable=True)
     dias_gestion = Column(Integer, nullable=True)

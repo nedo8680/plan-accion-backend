@@ -122,3 +122,32 @@ def cargar_habilidades(
 
     db.commit()
     return {"insertados": len(nuevos)}
+
+
+@router.delete("/{habilidad_id}")
+@router.delete("/{habilidad_id}/")
+def eliminar_habilidad(
+    habilidad_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    habilidad = db.query(models.Habilidad).filter(models.Habilidad.id == habilidad_id).first()
+    
+    if not habilidad:
+        raise HTTPException(status_code=404, detail="Habilidad no encontrada")
+
+    db.delete(habilidad)
+    db.commit()
+    
+    return {"message": "Habilidad eliminada exitosamente"}
+
+@router.delete("")
+@router.delete("/")
+def eliminar_todas_habilidades(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    db.query(models.Habilidad).delete()
+    db.commit()
+    return {"message": "Todas las habilidades han sido eliminadas exitosamente"}
+
