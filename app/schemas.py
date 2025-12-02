@@ -117,7 +117,7 @@ class ReporteEntradaLista(BaseModel):
 
 # ---------------- PQRDS (padre) ----------------
 class PqrdBase(BaseModel):
-    label: int
+    label: str
     fecha_vencimiento: Optional[date] = None
     fecha_radicado_salida: Optional[date] = None
     dias_gestion: Optional[int] = None
