@@ -24,6 +24,7 @@ def create_tables_if_needed():
         hashed_password TEXT NOT NULL,
         role TEXT NOT NULL,
         entidad_perm TEXT,
+        entidad TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     """)
@@ -45,7 +46,15 @@ def create_tables_if_needed():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS seguimiento (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        indicador TEXT,
+        observacion_informe_calidad TEXT,
         plan_id INTEGER,
+        updated_by_id INTEGER,
+        observacion_calidad TEXT,
+        insumo_mejora TEXT,
+        tipo_accion_mejora TEXT,
+        accion_mejora_planteada TEXT,
+        descripcion_actividades TEXT,
         evidencia_cumplimiento TEXT,
         fecha_inicio TEXT,
         fecha_final TEXT,
@@ -78,18 +87,18 @@ def seed_data():
     cur.execute("SELECT id FROM users WHERE email = ?", ("admin@demo.com",))
     if not cur.fetchone():
         cur.execute("""
-            INSERT INTO users (email, hashed_password, role, entidad_perm, created_at)
-            VALUES (?, ?, ?, ?, ?)
-        """, ("admin@demo.com", hash_pw("admin123"), "admin", VALID_ADMIN_PERM, now))
+            INSERT INTO users (email, hashed_password, role, entidad_perm, entidad, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, ("admin@demo.com", hash_pw("admin123"), "admin", VALID_ADMIN_PERM, "Administrador", now))
         print(f"✅ Usuario admin@demo.com creado (permiso: {VALID_ADMIN_PERM})")
 
     # Usuario demo
     cur.execute("SELECT id FROM users WHERE email = ?", ("usuario@demo.com",))
     if not cur.fetchone():
         cur.execute("""
-            INSERT INTO users (email, hashed_password, role, entidad_perm, created_at)
-            VALUES (?, ?, ?, ?, ?)
-        """, ("usuario@demo.com", hash_pw("usuario123"), "entidad", "captura_reportes", now))
+            INSERT INTO users (email, hashed_password, role, entidad_perm, entidad, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, ("usuario@demo.com", hash_pw("usuario123"), "entidad", "captura_reportes", "Alcaldía Demo", now))
         print("✅ Usuario usuario@demo.com creado")
 
     # Plan demo
