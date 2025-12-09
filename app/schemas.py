@@ -28,6 +28,7 @@ class PlanBase(BaseModel):
     enlace_entidad: Optional[str] = None
     estado: Optional[str] = "Pendiente"
     indicador: Optional[str] = None
+    aprobado_evaluador: Optional[str] = None
 
 class PlanCreate(PlanBase):
     pass
