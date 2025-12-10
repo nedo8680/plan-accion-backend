@@ -42,7 +42,6 @@ class PlanAccion(Base):
     estado = Column(String(50), nullable=True, default="Pendiente")
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     indicador = Column(String(255), nullable=True)
-    aprobado_evaluador = Column(String(50), nullable=True)  # "Aprobado" | "Rechazado"
     seguimientos = relationship(
         "Seguimiento",
         back_populates="plan",
