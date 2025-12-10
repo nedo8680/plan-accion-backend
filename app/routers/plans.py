@@ -96,6 +96,11 @@ def obtener_plan(
     plan = db.query(models.PlanAccion).get(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="No encontrado")
+#Si el plan no ha sido aprobado por el evaluador, no devolver sus seguimientos
+        if plan.aprobado_evaluador != "Aprobado":
+        plan.seguimientos = []
+
+
     return plan
 
 @router.put("/{plan_id}")
@@ -193,6 +198,12 @@ def listar_seguimientos(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
     _assert_access(plan, user)
+
+#No muestra seguimientos so no está aprobado por el evaluador
+    if plan.aprobado_evaluador != "Aprobado":
+        return []
+
+
     seguimientos = (
         db.query(models.Seguimiento)
         .options(joinedload(models.Seguimiento.updated_by))  # 👈 aquí usamos la relación
@@ -213,6 +224,15 @@ def crear_seguimiento(
     plan = db.query(models.PlanAccion).get(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
+
+
+        if plan.aprobado_evaluador != "Aprobado":
+        raise HTTPException(
+            status_code=400, 
+            detail="No se pueden crear seguimientos hasta que el plan sea 'Aprobado' por el evaluador."
+        )
+
+        
     _assert_access(plan, user)
 
     data = payload.model_dump(exclude_unset=True)
