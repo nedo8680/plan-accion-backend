@@ -96,11 +96,6 @@ def obtener_plan(
     plan = db.query(models.PlanAccion).get(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="No encontrado")
-#Si el plan no ha sido aprobado por el evaluador, no devolver sus seguimientos
-    if plan.aprobado_evaluador != "Aprobado":
-        plan.seguimientos = []
-
-
     return plan
 
 @router.put("/{plan_id}")
@@ -198,15 +193,9 @@ def listar_seguimientos(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
     _assert_access(plan, user)
-
-#No muestra seguimientos so no está aprobado por el evaluador
-    if plan.aprobado_evaluador != "Aprobado":
-        return []
-
-
     seguimientos = (
         db.query(models.Seguimiento)
-        .options(joinedload(models.Seguimiento.updated_by))  # 👈 aquí usamos la relación
+        .options(joinedload(models.Seguimiento.updated_by)) 
         .filter(models.Seguimiento.plan_id == plan.id)
         .order_by(models.Seguimiento.id.asc())
         .all()
@@ -224,29 +213,31 @@ def crear_seguimiento(
     plan = db.query(models.PlanAccion).get(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
-    if plan.aprobado_evaluador != "Aprobado":
-        raise HTTPException(
-            status_code=400, 
-            detail="No se pueden crear seguimientos hasta que el plan sea 'Aprobado' por el evaluador."
-        )
-
-        
     _assert_access(plan, user)
 
     data = payload.model_dump(exclude_unset=True)
+
+    # Normalizamos fechas
     for k in ("fecha_inicio", "fecha_final"):
         if k in data and not data[k]:
             data[k] = None
 
-    seg = models.Seguimiento(**data, plan_id=plan.id)
-    seg.updated_by_id = user.id 
-    db.add(seg); 
-    
+    # Actualizar indicador en el plan (si viene)
     indicador_val = (data.get("indicador") or "").strip()
     if indicador_val:
         plan.indicador = indicador_val
-    
-    db.commit(); 
+
+    # Actualizar criterio en el plan (si viene) y quitarlo de data
+    criterio_val = (data.pop("criterio", None) or "").strip()
+    if criterio_val:
+        plan.criterio = criterio_val
+
+    # Crear seguimiento solo con los campos que realmente existen en Seguimiento
+    seg = models.Seguimiento(**data, plan_id=plan.id)
+    seg.updated_by_id = user.id
+    db.add(seg)
+
+    db.commit()
     db.refresh(seg)
     return seg
 
@@ -269,18 +260,27 @@ def actualizar_seguimiento(
         raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
 
     data = payload.model_dump(exclude_unset=True)
+
     if user.role == models.UserRole.entidad and "observacion_calidad" in data:
         del data["observacion_calidad"]
 
-    for k, v in data.items():
-        setattr(seg, k, v)
-        
+    # Si viene enlace_entidad, lo reflejamos en el plan
     if "enlace_entidad" in data:
         plan.enlace_entidad = data["enlace_entidad"]
-    
+
+    # Si viene indicador, lo subimos al plan
     indicador = (data.get("indicador") or "").strip()
     if indicador:
         plan.indicador = indicador
+
+    # Si viene criterio, lo subimos al plan y LO QUITAMOS de data
+    criterio_val = (data.pop("criterio", None) or "").strip()
+    if criterio_val:
+        plan.criterio = criterio_val
+
+    # Ahora sí, solo los campos válidos para Seguimiento
+    for k, v in data.items():
+        setattr(seg, k, v)
 
     seg.updated_by_id = user.id
     db.commit()

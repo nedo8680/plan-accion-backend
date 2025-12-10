@@ -28,6 +28,8 @@ class PlanBase(BaseModel):
     enlace_entidad: Optional[str] = None
     estado: Optional[str] = "Pendiente"
     indicador: Optional[str] = None
+    criterio: Optional[str] = None
+    aprobado_evaluador: Optional[str] = None
 
 class PlanCreate(PlanBase):
     pass
@@ -84,6 +86,7 @@ class SeguimientoBase(BaseModel):
     enlace_entidad: Optional[str] = None
     observacion_calidad: Optional[str] = None  # auditor/admin
     indicador: Optional[str] = None
+    criterio: Optional[str] = None
 
 class SeguimientoCreate(SeguimientoBase):
     pass
