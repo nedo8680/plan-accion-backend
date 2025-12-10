@@ -28,6 +28,8 @@ class PlanBase(BaseModel):
     enlace_entidad: Optional[str] = None
     estado: Optional[str] = "Pendiente"
     indicador: Optional[str] = None
+    criterio: Optional[str] = None
+    aprobado_evaluador: Optional[str] = None
 
 class PlanCreate(PlanBase):
     pass
@@ -72,6 +74,7 @@ class UserOut(BaseModel):
 
 # ---------------- Seguimiento (hijo) ----------------
 class SeguimientoBase(BaseModel):
+    ajuste_de_id: Optional[int] = None
     observacion_informe_calidad: Optional[str] = None
     insumo_mejora: Optional[str] = None
     tipo_accion_mejora: Optional[str] = None
@@ -84,6 +87,7 @@ class SeguimientoBase(BaseModel):
     enlace_entidad: Optional[str] = None
     observacion_calidad: Optional[str] = None  # auditor/admin
     indicador: Optional[str] = None
+    criterio: Optional[str] = None
 
 class SeguimientoCreate(SeguimientoBase):
     pass

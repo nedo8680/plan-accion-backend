@@ -42,6 +42,9 @@ class PlanAccion(Base):
     estado = Column(String(50), nullable=True, default="Pendiente")
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     indicador = Column(String(255), nullable=True)
+    
+    criterio = Column(String(255), nullable=True) 
+    aprobado_evaluador = Column(String(50), nullable=True)
     seguimientos = relationship(
         "Seguimiento",
         back_populates="plan",
@@ -51,6 +54,7 @@ class PlanAccion(Base):
 class Seguimiento(Base):
     __tablename__ = "seguimiento"
     id = Column(Integer, primary_key=True)
+    ajuste_de_id = Column(Integer, ForeignKey("seguimiento.id"), nullable=True)
     indicador = Column(String, nullable=True)
     observacion_informe_calidad = Column(Text, nullable=True)
     plan_id = Column(Integer, ForeignKey("plan_accion.id"), nullable=False)
