@@ -30,6 +30,7 @@ class PlanAccion(Base):
     insumo_mejora = Column(String(255), nullable=True)
     tipo_accion_mejora = Column(String(255), nullable=True)
     accion_mejora_planteada = Column(Text, nullable=True)
+    observacion_informe_calidad = Column(Text, nullable=True)
     descripcion_actividades = Column(Text, nullable=True)
     evidencia_cumplimiento = Column(Text, nullable=True)
     fecha_inicio = Column(Date, nullable=True)

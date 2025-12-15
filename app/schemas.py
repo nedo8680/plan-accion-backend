@@ -20,6 +20,7 @@ class PlanBase(BaseModel):
     insumo_mejora: Optional[str] = None
     tipo_accion_mejora: Optional[str] = None
     accion_mejora_planteada: Optional[str] = None
+    observacion_informe_calidad: Optional[str] = None
     descripcion_actividades: Optional[str] = None
     evidencia_cumplimiento: Optional[str] = None
     fecha_inicio: Optional[date] = None
