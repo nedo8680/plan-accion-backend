@@ -5,6 +5,22 @@ API REST para **Planes**, **Seguimientos** y **Usuarios** con **roles** y **perm
 
 ---
 
+## 🧭 Flujo real del sistema (para nuevos devs)
+
+### Captura (Encuestas)
+- **NO pasa por este backend**
+- La captura se hace en encuestas externas (el frontend solo muestra links)
+
+### Reportes (Shiny)
+- **NO pasa por este backend**
+- Los reportes se muestran en Shiny (embebido desde el frontend)
+
+### Seguimiento (Planes + Seguimientos)
+- **SÍ es responsabilidad de este backend**
+- Todo el CRUD y reglas de acceso viven en `/seguimiento`
+
+---
+
 ## 🧠 Stack
 - FastAPI (Uvicorn)
 - SQLAlchemy ORM + Pydantic
@@ -32,15 +48,24 @@ Cada **entidad** puede asignar a un usuario **dos permisos** independientes:
 
 ---
 
-## 📂 Estructura del repo (sugerida)
+## 📂 Estructura del repositorio
 ```
 .
-├─ app/                    # FastAPI (main, routers, auth, models, schemas, db)
+├─ app/
+│  ├─ main.py            # Inicializa FastAPI, CORS y routers
+│  ├─ auth.py            # JWT y dependencias de autenticación
+│  ├─ database.py        # Engine, Session y Base
+│  ├─ models.py          # Modelos SQLAlchemy
+│  ├─ schemas.py         # Esquemas Pydantic
+│  └─ routers/
+│     ├─ plans.py        # /seguimiento (planes + seguimientos)
+│     ├─ users.py        # Usuarios, roles y permisos
+│     └─ files.py
 ├─ tools/
-│  ├─ seed.py              # seed SQLite (crea tablas helper si faltan)
-│  └─ seed_neon.py         # seed Neon (psycopg3) + crea tablas helper si faltan
+│  ├─ seed.py            # seed SQLite (crea tablas helper si faltan)
+│  └─ seed_neon.py       # seed Neon (psycopg3) + crea tablas helper si faltan
 ├─ Dockerfile
-├─ docker-compose.yml      # (opcional) API + Postgres
+├─ docker-compose.yml    # (opcional) API + Postgres
 ├─ requirements.txt
 └─ .env
 ```
