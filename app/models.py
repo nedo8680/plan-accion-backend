@@ -102,9 +102,11 @@ class PQRD(Base):
     __tablename__ = "pqrds"
     id = Column(Integer, primary_key=True, index=True)
     label = Column(String(255), nullable=False)
-    fecha_vencimiento = Column(Date, nullable=True)
-    fecha_radicado_salida = Column(Date, nullable=True)
-    dias_gestion = Column(Integer, nullable=True)
+    tipo_gestion = Column(String(255), nullable=False)
+    dependencia = Column(String(255), nullable=False)
+    entidad = Column(String(255), nullable=False)
+    fecha_ingreso = Column(Date, nullable=False)
+    periodo = Column(String(50), nullable=True)
 
 # Clase de habilidades
 class Habilidad(Base):
