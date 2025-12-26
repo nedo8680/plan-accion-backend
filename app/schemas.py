@@ -130,11 +130,13 @@ class ReporteEntradaLista(BaseModel):
 # ---------------- PQRDS (padre) ----------------
 class PqrdBase(BaseModel):
     label: str
-    fecha_vencimiento: Optional[date] = None
-    fecha_radicado_salida: Optional[date] = None
-    dias_gestion: Optional[int] = None
+    tipo_gestion: Optional[str] = None
+    dependencia: Optional[str] = None
+    entidad: Optional[str] = None
+    fecha_ingreso: Optional[date] = None
+    periodo: Optional[str] = None
 
-    @field_validator("fecha_vencimiento", "fecha_radicado_salida", mode="before")
+    @field_validator("fecha_ingreso", mode="before")
     def empty_string_to_none(cls, v):
         if v == "" or v is None:
             return None

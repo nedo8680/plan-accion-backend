@@ -19,6 +19,8 @@ def indicadores_usados(
     para la entidad del usuario autenticado.
     """
     user_entidad = (getattr(user, "entidad", "") or "").strip()
+    user_role = getattr(user.role, "value", user.role)
+    is_entidad_auditor = user_role == "entidad" and bool(getattr(user, "entidad_auditor", False))
 
     # Base: join Seguimiento -> PlanAccion para filtrar por entidad
     q = (
@@ -31,7 +33,7 @@ def indicadores_usados(
     )
 
     # Si el usuario tiene entidad asociada, filtramos solo sus planes
-    if user_entidad:
+    if user_entidad and not is_entidad_auditor:
         q = q.filter(
             func.lower(models.PlanAccion.nombre_entidad) == func.lower(user_entidad)
         )
@@ -54,8 +56,9 @@ def list_planes(
     query = db.query(models.PlanAccion)
     user_role = getattr(user.role, "value", user.role)
     user_entidad = (getattr(user, "entidad", "") or "").strip()
+    is_entidad_auditor = user_role == "entidad" and bool(getattr(user, "entidad_auditor", False))
 
-    if user_role == "entidad" and user_entidad:
+    if user_role == "entidad" and user_entidad and not is_entidad_auditor:
         query = query.filter(
             func.lower(models.PlanAccion.nombre_entidad) == func.lower(user_entidad)
         )

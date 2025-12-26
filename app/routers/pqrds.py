@@ -43,42 +43,6 @@ def get_pqrd_by_label(
     return pqrd
 
 
-@router.get("/c1p1d1i01")
-@router.get("/c1p1d1i01/")
-def calcular_indicador_1(
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
-):
-    total_pqrds = db.query(models.PQRD).count()
-    if total_pqrds == 0:
-        return {"c1p1d1i01": 0.0}
-
-    pqrds_a_tiempo = db.query(models.PQRD).filter(
-        models.PQRD.fecha_vencimiento <= models.PQRD.fecha_radicado_salida
-    ).count()
-
-    indicador = (pqrds_a_tiempo / total_pqrds) * 100
-    return {"c1p1d1i01": round(indicador, 2)}
-
-
-@router.get("/c1p1d1i02")
-@router.get("/c1p1d1i02/")
-def calcular_indicador_2(
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
-):
-    total_pqrds = db.query(models.PQRD).count()
-    if total_pqrds == 0:
-        return {"c1p1d1i02": 0.0}
-
-    pqrds_con_traslado = db.query(models.PQRD).filter(
-        models.PQRD.dias_gestion < 5
-    ).count()
-
-    indicador = (pqrds_con_traslado / total_pqrds) * 100
-    return {"c1p1d1i02": round(indicador, 2)}
-
-
 @router.post("")
 @router.post("/")
 def cargar_pqrds(
@@ -91,9 +55,11 @@ def cargar_pqrds(
     for p in payload.pqrds:
         nuevo = models.PQRD(
             label=p.label,
-            fecha_vencimiento=p.fecha_vencimiento if p.fecha_vencimiento != "" else None,
-            fecha_radicado_salida=p.fecha_radicado_salida if p.fecha_radicado_salida != "" else None,
-            dias_gestion=p.dias_gestion
+            tipo_gestion=p.tipo_gestion if p.tipo_gestion else None,
+            dependencia=p.dependencia if p.dependencia else None,
+            entidad=p.entidad if p.entidad else None,
+            fecha_ingreso=p.fecha_ingreso if p.fecha_ingreso else None,
+            periodo=p.periodo if p.periodo else None
         )
         db.add(nuevo)
         nuevos.append(nuevo)
