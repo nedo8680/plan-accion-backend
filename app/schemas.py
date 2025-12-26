@@ -49,11 +49,15 @@ UserRoleInput = Literal["admin", "entidad", "auditor"]
 class EntidadPermUpdate(BaseModel):
     entidad_perm: EntidadPerm
 
+class EntidadAuditorUpdate(BaseModel):
+    entidad_auditor: bool
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: UserRoleInput
     entidad_perm: Optional[EntidadPerm] = None
+    entidad_auditor: Optional[bool] = False
     entidad: str
 
 class UserRoleUpdate(BaseModel):
@@ -64,6 +68,7 @@ class UserOut(BaseModel):
     email: EmailStr
     role: Literal["admin", "entidad", "auditor", "ciudadano"]
     entidad_perm: Optional[EntidadPerm] = None
+    entidad_auditor: Optional[bool] = False
     entidad: str
     class Config:
         from_attributes = True

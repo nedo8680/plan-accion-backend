@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date, Enum, ForeignKey, DateTime, select
+from sqlalchemy import Column, Integer, String, Text, Date, Enum, ForeignKey, DateTime, Boolean, select
 from sqlalchemy.orm import relationship, column_property
 from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
@@ -20,6 +20,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.entidad)
     entidad_perm = Column(String(32), nullable=True)
+    entidad_auditor = Column(Boolean, nullable=False, default=False)
     entidad = Column(String, nullable=False) 
 
 class PlanAccion(Base):

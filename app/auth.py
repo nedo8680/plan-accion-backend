@@ -27,13 +27,21 @@ def _enum_val(x):
     except Exception:
         return x
 
-def create_access_token(sub: str, role: str, user_id: int, entidad_perm: Optional[str] = None,  entidad: Optional[str] = None,   ) -> str:
+def create_access_token(
+    sub: str,
+    role: str,
+    user_id: int,
+    entidad_perm: Optional[str] = None,
+    entidad: Optional[str] = None,
+    entidad_auditor: Optional[bool] = None,
+) -> str:
     payload = {
         "sub": sub,            # email
         "role": role,          # "admin" | "entidad" | "auditor" | "ciudadano"
         "uid": user_id,        # id numérico
         "entidad": entidad,     # entidad name
         "entidad_perm": entidad_perm,  # "captura_reportes" | "reportes_seguimiento" | None
+        "entidad_auditor": bool(entidad_auditor),
         "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -76,7 +84,8 @@ def require_roles(*roles: str):
         if DISABLE_AUTH:
             return user
         current_role = _enum_val(user.role)
-        if current_role not in roles:
+        is_entidad_auditor = current_role == "entidad" and bool(getattr(user, "entidad_auditor", False))
+        if current_role not in roles and not ("auditor" in roles and is_entidad_auditor):
             raise HTTPException(status_code=403, detail="Sin permisos")
         return user
     return checker
@@ -89,6 +98,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
     role_val = _enum_val(user.role)
     entidad_perm_val = _enum_val(getattr(user, "entidad_perm", None))
+    entidad_auditor_val = bool(getattr(user, "entidad_auditor", False))
 
     token = create_access_token(
         sub=user.email,
@@ -96,6 +106,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
         user_id=user.id,
         entidad=getattr(user, "entidad", None),  
         entidad_perm=entidad_perm_val,  
+        entidad_auditor=entidad_auditor_val,
     )
     return {"access_token": token, "token_type": "bearer"}
 
@@ -107,4 +118,5 @@ def me(current: models.User = Depends(get_current_user)):
         "role": _enum_val(current.role),
         "entidad": getattr(current, "entidad", None),
         "entidad_perm": _enum_val(getattr(current, "entidad_perm", None)),
+        "entidad_auditor": bool(getattr(current, "entidad_auditor", False)),
     }

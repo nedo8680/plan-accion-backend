@@ -261,7 +261,9 @@ def actualizar_seguimiento(
 
     data = payload.model_dump(exclude_unset=True)
 
-    if user.role == models.UserRole.entidad and "observacion_calidad" in data:
+    user_role = getattr(user.role, "value", user.role)
+    is_entidad_auditor = user_role == "entidad" and bool(getattr(user, "entidad_auditor", False))
+    if user_role == "entidad" and not is_entidad_auditor and "observacion_calidad" in data:
         del data["observacion_calidad"]
 
     # Si viene enlace_entidad, lo reflejamos en el plan

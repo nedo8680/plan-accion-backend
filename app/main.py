@@ -172,12 +172,67 @@ def _relax_user_fk_constraints():
                 """))
     except Exception as e:
         print(f"[WARN] _relax_user_fk_constraints falló: {e}")
+
+def _ensure_entidad_auditor_column():
+    """Añade users.entidad_auditor si falta (SQLite y PostgreSQL)."""
+    try:
+        with engine.begin() as conn:
+            dialect = conn.engine.dialect.name
+            if dialect == "sqlite":
+                rows = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+                names = {r[1] for r in rows}
+                if "entidad_auditor" not in names:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN entidad_auditor BOOLEAN DEFAULT 0"))
+                    conn.execute(text("""
+                        UPDATE users
+                        SET entidad_auditor = 0
+                        WHERE entidad_auditor IS NULL
+                    """))
+            else:
+                res = conn.execute(text("""
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'entidad_auditor'
+                """)).first()
+                if not res:
+                    conn.execute(text('ALTER TABLE "users" ADD COLUMN entidad_auditor BOOLEAN DEFAULT FALSE'))
+                    conn.execute(text("""
+                        UPDATE "users"
+                        SET entidad_auditor = FALSE
+                        WHERE entidad_auditor IS NULL
+                    """))
+    except Exception as e:
+        print(f"[WARN] _ensure_entidad_auditor_column falló: {e}")
+
+def _normalize_legacy_roles():
+    """Normaliza roles legacy en la tabla users."""
+    try:
+        with engine.begin() as conn:
+            dialect = conn.engine.dialect.name
+            if dialect == "sqlite":
+                conn.execute(text("""
+                    UPDATE users
+                    SET role = 'entidad',
+                        entidad_auditor = 1
+                    WHERE role = 'entidad_evaluador'
+                """))
+            else:
+                conn.execute(text("""
+                    UPDATE "users"
+                    SET role = 'entidad',
+                        entidad_auditor = TRUE
+                    WHERE role = 'entidad_evaluador'
+                """))
+    except Exception as e:
+        print(f"[WARN] _normalize_legacy_roles falló: {e}")
             
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     _ensure_updated_by_column() 
     _relax_user_fk_constraints()
+    _ensure_entidad_auditor_column()
+    _normalize_legacy_roles()
     if SEED_ON_START:
         with SessionLocal() as db:
             seed_users(db)
@@ -227,6 +282,8 @@ def patch_db_on_startup():
                     SET entidad_perm = 'captura_reportes'
                     WHERE role = 'entidad' AND (entidad_perm IS NULL OR entidad_perm = '')
                 """))
+            _ensure_entidad_auditor_column()
+            _normalize_legacy_roles()
         else:
             # Postgres / otros
             res = conn.execute(text("""
@@ -242,6 +299,8 @@ def patch_db_on_startup():
                     SET entidad_perm = 'captura_reportes'
                     WHERE role = 'entidad' AND entidad_perm IS NULL
                 """))
+            _ensure_entidad_auditor_column()
+            _normalize_legacy_roles()
 # ──────────────────────────────────────────────────────────────────────
 
 # Routers

@@ -24,6 +24,7 @@ def create_tables_if_needed():
         hashed_password TEXT NOT NULL,
         role TEXT NOT NULL,
         entidad_perm TEXT,
+        entidad_auditor INTEGER DEFAULT 0,
         entidad TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -87,18 +88,18 @@ def seed_data():
     cur.execute("SELECT id FROM users WHERE email = ?", ("admin@demo.com",))
     if not cur.fetchone():
         cur.execute("""
-            INSERT INTO users (email, hashed_password, role, entidad_perm, entidad, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, ("admin@demo.com", hash_pw("admin123"), "admin", VALID_ADMIN_PERM, "Administrador", now))
+            INSERT INTO users (email, hashed_password, role, entidad_perm, entidad_auditor, entidad, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, ("admin@demo.com", hash_pw("admin123"), "admin", VALID_ADMIN_PERM, 0, "Administrador", now))
         print(f"✅ Usuario admin@demo.com creado (permiso: {VALID_ADMIN_PERM})")
 
     # Usuario demo
     cur.execute("SELECT id FROM users WHERE email = ?", ("usuario@demo.com",))
     if not cur.fetchone():
         cur.execute("""
-            INSERT INTO users (email, hashed_password, role, entidad_perm, entidad, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, ("usuario@demo.com", hash_pw("usuario123"), "entidad", "captura_reportes", "Alcaldía Demo", now))
+            INSERT INTO users (email, hashed_password, role, entidad_perm, entidad_auditor, entidad, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, ("usuario@demo.com", hash_pw("usuario123"), "entidad", "captura_reportes", 0, "Alcaldía Demo", now))
         print("✅ Usuario usuario@demo.com creado")
 
     # Plan demo

@@ -118,13 +118,15 @@ def create_user(payload: schemas.UserCreate, db: Session = Depends(get_db), user
     hashed = bcrypt.hash(payload.password)
 
     perm = payload.entidad_perm if payload.role == "entidad" else None
+    entidad_auditor = bool(payload.entidad_auditor) if payload.role == "entidad" else False
 
     u = models.User(
         email=email, 
         hashed_password=hashed, 
         role=_as_db_role(payload.role), 
         entidad=entidad_clean, 
-        entidad_perm=perm
+        entidad_perm=perm,
+        entidad_auditor=entidad_auditor,
     )
 
     db.add(u)
@@ -155,6 +157,14 @@ def update_user_role(user_id: int, payload: schemas.UserRoleUpdate, db: Session 
         if admins <= 1:
             raise HTTPException(status_code=400, detail="Cannot demote the last admin")
     u.role = _as_db_role(payload.role)
+    if payload.role != "entidad":
+        u.entidad_perm = None
+        u.entidad_auditor = False
+    else:
+        if not u.entidad_perm:
+            u.entidad_perm = "captura_reportes"
+        if u.entidad_auditor is None:
+            u.entidad_auditor = False
     db.commit()
     db.refresh(u)
     return u
@@ -169,6 +179,20 @@ def update_entidad_perm(user_id: int, payload: schemas.EntidadPermUpdate,
         raise HTTPException(404, "User not found")
     if (getattr(u, "role", None) == "entidad") or (getattr(u, "role", None).value == "entidad"):
         u.entidad_perm = payload.entidad_perm
+        db.commit(); db.refresh(u)
+        return u
+    raise HTTPException(400, "Solo aplica para usuarios con rol 'entidad'")
+
+@router.patch("/{user_id}/auditor", response_model=schemas.UserOut)
+@router.patch("/{user_id}/auditor/", response_model=schemas.UserOut)
+def update_entidad_auditor(user_id: int, payload: schemas.EntidadAuditorUpdate,
+                           db: Session = Depends(get_db), user=Depends(get_current_user)):
+    require_admin(user)
+    u = db.query(models.User).get(user_id)
+    if not u:
+        raise HTTPException(404, "User not found")
+    if (getattr(u, "role", None) == "entidad") or (getattr(u, "role", None).value == "entidad"):
+        u.entidad_auditor = bool(payload.entidad_auditor)
         db.commit(); db.refresh(u)
         return u
     raise HTTPException(400, "Solo aplica para usuarios con rol 'entidad'")
